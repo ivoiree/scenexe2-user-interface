@@ -1,5 +1,9 @@
 const express = require("express");
-const fetch = require("node-fetch");
+//const fetch = require("node-fetch");
+import("node-fetch").then(fetch => {
+}).catch(err => {
+    console.error('Failed to load node-fetch:', err);
+});
 const app = express();
 const port = 3000;
 
