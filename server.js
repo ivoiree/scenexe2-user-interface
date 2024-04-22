@@ -21,6 +21,24 @@ app.get("/account/:user", async (req, res) => {
 			return num;
 		};
 
+        async function playercount() {
+            const url = 'https://scenexe2.io/playercount';
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                let playerCountList = '';
+                for (const key in data) {
+                    if (data.hasOwnProperty(key) && key !== 'total') {
+                        playerCountList += `${key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim()}: ${data[key]}<br>`;
+                    }
+                }
+                return playerCountList;
+            } catch (error) {
+                console.error('Error fetching player count:', error);
+                return 'Error fetching player count';
+            }
+        }
+
 		function formatStars(stars) {
 			if (stars >= 1000) {
 				return stars.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -54,6 +72,7 @@ app.get("/account/:user", async (req, res) => {
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713988313158/image.png?ex=6635741b&is=6622ff1b&hm=f94e9456ebafbbab0ad5ea73ca8664ab15281828d91a0140cb6f25c56c839b4a&",
         ]
         const background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+        const playercountlist = await playercount();
 		const html = `
     <!DOCTYPE html>
     <html>
@@ -141,8 +160,8 @@ app.get("/account/:user", async (req, res) => {
             }
             
             .stats-item {
-                flex: 1; /* Make each item take up an equal amount of space */
-                text-align: center; /* Center the text within each item */
+                flex: 1;
+                text-align: center; 
                 font-weight: bold;
                 display: flex;
                 flex-direction: column;
@@ -169,6 +188,16 @@ app.get("/account/:user", async (req, res) => {
                 height: 20px;
                 width: 100%;
                 z-index: 3;
+            }
+
+            .hr2 {
+                color: white;
+                border: 0;
+                border-top: 3px solid rgb(0,0,0);
+                height: 20px;
+                width: 100%;
+                z-index: 3;
+                margin-bottom: 5px;
             }
 
             .search-container {
@@ -205,6 +234,34 @@ app.get("/account/:user", async (req, res) => {
                 border-width: 3px;
                 border-radius: 3px;
                 background-color: white;
+            }
+
+            .boxes-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                gap: 20px; 
+            }
+
+            .box {
+                background: rgba(69, 69, 69, 0.3);
+                border: solid 2px black;
+                border-radius: 5px;
+                padding: 20px;
+                margin-top: 20px;
+                font-size: 25px;
+                z-index: 100;
+            }
+
+            .box-title {
+                font-size: 25px;
+            }
+
+            .box-value {
+                font-size: 20px;
+                max-height: 300px;
+                overflow-y: scroll;
+                z-index: 101;
             }
         </style>
     </head>
@@ -254,6 +311,22 @@ app.get("/account/:user", async (req, res) => {
             </div>
         </div>
         <hr>
+        <div class="boxes-container">
+            <div class="box">
+                <div class="box-value">
+                    <div class="box-title">Player Count</div>
+                    <hr class="hr2">
+                    <div>${playercountlist}</div>
+                </div>
+            </div>
+            <div class="box">
+                <div class="box-value">
+                    <div class="box-title">Additional Info</div>
+                    <hr class="hr2">
+                    <div>Polygon Kills: ${formatNumber(data.polygonKills)}</div>
+                </div>
+            </div>
+        </div>
     </body>
     </html>                 
     `;
