@@ -11,18 +11,15 @@ const session = require('express-session');
 const { URLSearchParams } = require('url');
 const app = express();
 const port = 3000;
-const CLIENT_ID = ''
-const CLIENT_SECRET = ''
-const REDIRECT_URI = 'http://localhost:3000/callback'
+const CLIENT_ID = '' //in discord dev apps get the app id and put it here
+const CLIENT_SECRET = '' //in the discord dev app when you make the Oauth2 get the token and put it here
+const REDIRECT_URI = 'http://localhost:3000/callback' //callback address
 
-
-// Generate a random secret
 const generateRandomString = () => {
     return crypto.randomBytes(32).toString('hex');
   };
   
-  const secret = generateRandomString();
-  
+const secret = generateRandomString();
 
 app.use(session({
     secret: secret,
@@ -34,7 +31,6 @@ app.get('/', (req, res) => {
     const authorizationUrl = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify`;
     res.redirect(authorizationUrl);
 });
-
 
 app.get('/callback', async (req, res) => {
     const code = req.query.code;
@@ -70,17 +66,14 @@ app.get('/callback', async (req, res) => {
 
         console.log("Retrieved user data:", userData);
 
-        // Ensure userData is properly initialized
         if (!req.session.userData) {
             req.session.userData = {};
         }
 
-        // Set the avatarUrl property on the userData object
         req.session.userData.avatarUrl = `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`;
 
         console.log("User data after setting avatar URL:", req.session.userData);
 
-        // Send JavaScript to prompt the user for their account name and redirect
         res.send(`
             <script>
                 const enteredAccountName = prompt('Enter your scenexe2 account name:');
@@ -433,6 +426,7 @@ app.get("/account/:user", async (req, res) => {
 	}
 });
 
+//if you want to host on your own domain
 /*
 const privateKey = fs.readFileSync('key.pem', 'utf8'); 
 const certificate = fs.readFileSync('cert.pem', 'utf8');
@@ -445,7 +439,6 @@ httpsServer.listen(port, () => {
     console.log(`Server running at https://your-domain.com:${port}`);
 });
 */
-
 
 app.listen(port, '0.0.0.0', () => {
 	console.log(`Server running at http://0.0.0.0:${port}`);
