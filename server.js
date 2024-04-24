@@ -1,5 +1,4 @@
 const express = require("express");
-//const fetch = require("node-fetch");
 import("node-fetch").then(fetch => {
 }).catch(err => {
     console.error('Failed to load node-fetch:', err);
@@ -32,11 +31,10 @@ app.get('/', (req, res) => {
     res.redirect(authorizationUrl);
 });
 
-const database = {};
-
-app.get('/database', (req, res) => {
-    res.json(database);
-});
+const database = {
+    "x":["1104064312630329396","https://cdn.discordapp.com/avatars/1104064312630329396/8d624d3fe2c8638897c346bdc95269d8.png"],
+    "inf":["1025244907151032370","https://cdn.discordapp.com/attachments/1190435941786071182/1232495617733955665/055e3f920286a55856c2d970f21a463a.png?ex=6629aa7d&is=662858fd&hm=a6f332dcf19f1bacedeb90a3b174563e9f50ff869c4eaa71768718e68df3781c&"],
+};
 
 app.post('/database', express.json(), (req, res) => {
     const { user, discordId, discordAvatarLink } = req.body;
@@ -45,9 +43,14 @@ app.post('/database', express.json(), (req, res) => {
         return res.status(400).json({ error: 'Missing fields' });
     }
 
+    if (database[user]) {
+        return res.status(409).json({ error: 'User already exists and cannot be changed' });
+    }
+
     database[user] = [discordId, discordAvatarLink];
     res.status(201).json({ message: 'User data added' });
 });
+
 app.get('/callback', async (req, res) => {
     const code = req.query.code;
     const tokenUrl = 'https://discord.com/api/oauth2/token';
@@ -139,9 +142,6 @@ app.get("/account/:user", async (req, res) => {
 	const user = req.params.user;
 	const url = `https://scenexe2.io/account?u=${user}`;
     const userData = req.session.userData;
-    if (!database[user]) {
-        return res.status(404).send("User not found in the database.");
-    }
 
 	try {
 		const response = await fetch(url);
@@ -200,7 +200,7 @@ app.get("/account/:user", async (req, res) => {
             }
         }
         
-        const pfp = database[user][1]
+        const pfp = database[user] ? database[user][1] : 'https://cdn.discordapp.com/attachments/1190435941786071182/1232493881204015144/db6b020c58607f70fd2075d4891671d7.png?ex=6629a8df&is=6628575f&hm=b54a778ad090e0ddcd32d52c66a1207a387bc503671eab4fea9729554d3c3731&';
         const backgrounds = [
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713107509349/image.png?ex=6635741a&is=6622ff1a&hm=20d5e6cde113220d0d9f548b079bddffcc72c3de0998519bdaa40bd898796839&",
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713426538496/image.png?ex=6635741b&is=6622ff1b&hm=4c78e36b2c79a14363e94974e210ebe729cbcd83afe3c3d29983c811ea609e68&",
