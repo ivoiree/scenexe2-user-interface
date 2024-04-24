@@ -1,6 +1,5 @@
 const express = require("express");
 //const fetch = require("node-fetch");
-//corn
 import("node-fetch").then(fetch => {
 }).catch(err => {
     console.error('Failed to load node-fetch:', err);
@@ -499,6 +498,284 @@ app.get("/account/:user", async (req, res) => {
 		console.error(error);
 		res.status(500).send("Error fetching data");
 	}
+});
+
+app.get('/', async (req, res) => {
+    const users = Object.keys(database);
+
+    const usersbox = await Promise.all(users.map(async (username) => {
+        const response = await fetch(`https://scenexe2.io/account?u=${encodeURIComponent(username)}`);
+        const userData = await response.json();
+        const stars = userData.stars;
+
+        return `
+            <div class="box">
+                <div class="box-title">
+                <a href="${host}:${port}/account/${username}">${username}</a>
+                </div>
+                <div class="box-value">
+                    <div>⭐ ${stars}</div>
+                </div>
+            </div>
+        `;
+    }));
+
+    const usersboxHtml = usersbox.join('');
+
+    const backgrounds = [
+        "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713107509349/image.png?ex=6635741a&is=6622ff1a&hm=20d5e6cde113220d0d9f548b079bddffcc72c3de0998519bdaa40bd898796839&",
+        "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713426538496/image.png?ex=6635741b&is=6622ff1b&hm=4c78e36b2c79a14363e94974e210ebe729cbcd83afe3c3d29983c811ea609e68&",
+        "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713720008784/image.png?ex=6635741b&is=6622ff1b&hm=2f5b033a506d3573aee2595a130126348c6ef06ac5cd44479a8437ec952dc65a&",
+        "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713988313158/image.png?ex=6635741b&is=6622ff1b&hm=f94e9456ebafbbab0ad5ea73ca8664ab15281828d91a0140cb6f25c56c839b4a&",
+    ];
+    const background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>scenexe2 profiles</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+             body {
+                overflow: hidden;
+                font-family: 'Roboto', sans-serif;
+                font-weight: 700;
+                background-image: url('${background}'); 
+                background-size: cover;
+                background-repeat: no-repeat;
+                color: white;
+                text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 0 #000;
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: flex-start;
+                padding: 20px;
+                z-index: 1;
+            }
+
+            body::before {
+                content: "";
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 0;
+            }
+    
+            .profile-container {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                z-index: 3;
+            }
+            
+            .profile-image {
+                width: 92px;
+                height: 92px;
+                border-radius: 50%;
+                border-style: solid;
+                border-color: black;
+                border-width: 5px;
+                z-index: 3;
+            }
+            
+            .profile-info {
+                display: flex;
+                flex-direction: column;
+                z-index: 3;
+            }
+    
+            .profile-info h1 {
+                font-size: 3em;
+                margin: -3px;
+                z-index: 3;
+            }
+
+            .profile-info p {
+                font-size: 1.2em;
+                margin: -3px;
+                z-index: 3;
+            }
+            
+            .description {
+                font-size: 1.2em;
+                margin-top: 5px;
+                z-index: 3;
+            }
+            
+            .stats-container {
+                display: flex;
+                justify-content: space-between;
+                width: 100%;
+                max-width: 600px;
+                margin-bottom: 30px;
+                z-index: 3;
+            }
+            
+            .stats-item {
+                flex: 1;
+                text-align: center; 
+                font-weight: bold;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 0px 65px;
+                z-index: 3;
+            }
+            
+            .stats-item .text {
+                font-size: 1.4em;
+                z-index: 3;
+            }
+            
+            .stats-item .value {
+                font-size: 0.8em;
+                z-index: 3;
+            }
+
+            hr {
+                color: white;
+                border: 0;
+                border-top: 3px solid rgb(0,0,0);
+                height: 20px;
+                width: 100%;
+                z-index: 3;
+            }
+
+            .hr2 {
+                color: white;
+                border: 0;
+                border-top: 3px solid rgb(0,0,0);
+                height: 20px;
+                width: 100%;
+                z-index: 3;
+                margin-bottom: 5px;
+            }
+
+            .search-container {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                z-index: 1000;
+            }
+    
+            .search-form {
+                display: flex;
+                align-items: center;
+                border-style: solid;
+                border-width: 4px;
+                border-color: rgb(0, 0, 0);
+                border-radius: 5px;
+                background-color: rgba(0, 0, 0, 0.3);
+                padding: 3px 5px;
+            }
+    
+            .search-input {
+                flex-grow: 0;
+                border: none;
+                background-color: transparent;
+                color: white;
+            }
+
+            .search-button {
+                position: relative;
+                cursor: pointer;
+                width: 25px; 
+                height: 25px;
+                border-style: solid;
+                border-color: rgba(0, 0, 0, 1);
+                border-width: 3px;
+                border-radius: 3px;
+                background-color: white;
+                opacity: 0;
+                z-index: 301;
+            }
+            
+            .search-button-image {
+                top: 0;
+                right: 0;
+                cursor: pointer;
+                width: 25px; 
+                height: 25px;
+                border-style: solid;
+                border-color: rgba(0, 0, 0, 1);
+                border-width: 3px;
+                border-radius: 3px;
+                background-color: white;
+                opacity: 1;
+                z-index: 300;
+            }
+            
+
+            .boxes-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                gap: 20px; 
+                overflow-y: scroll;
+            }
+
+            .box {
+                background: rgba(69, 69, 69, 0.3);
+                border: solid 2px black;
+                border-radius: 5px;
+                padding: 20px;
+                margin-top: 20px;
+                font-size: 25px;
+                z-index: 100;
+            }
+
+            .box-title {
+                font-size: 25px;
+            }
+
+            .box-value {
+                font-size: 20px;
+                max-height: 300px;
+                overflow-y: hidden;
+                z-index: 101;
+            }
+        </style>
+    </head>
+    <body>
+    <div class="search-container">
+        <form class="search-form" id="searchForm">
+            <input class="search-input" type="text" name="query" placeholder="Search...">
+            <button type="submit" class="search-button">
+            <img class="search-button-image" src="https://scenexe.io/assets/search.png" alt="Search">
+            </button>
+        </form>
+    </div>
+    <script>
+    document.getElementById('searchForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const input = document.querySelector('.search-input').value;
+        const url = '/account/' + encodeURIComponent(input);
+        window.location.href = url; // Open the URL in the same tab
+    });
+    </script>
+    <div class="profile-container">
+        <div class="profile-info">
+            <h1>scenexe2.io profiles</h1>
+        </div>
+    </div>
+    <div class="description">hello chat</div>
+    <button onclick="window.location.href("/link")">link!</button>
+    <hr>
+    <div class="boxes-container">
+        ${usersbox}
+    </div>
+    </body>
+    </html>
+    `;
+
+    res.send(html);
 });
 
 //if you want to host on your own domain
