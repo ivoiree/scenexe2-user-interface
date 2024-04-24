@@ -1,15 +1,152 @@
 const express = require("express");
-const fetch = require("node-fetch");
+//const fetch = require("node-fetch");
+import("node-fetch").then(fetch => {
+}).catch(err => {
+    console.error('Failed to load node-fetch:', err);
+});
+const fs = require("fs");
+const https = require("https");
+const crypto = require('crypto');
+const session = require('express-session');
+const { URLSearchParams } = require('url');
 const app = express();
 const port = 3000;
+const CLIENT_ID = '1232467754389606461' //in discord dev apps get the app id and put it here
+const CLIENT_SECRET = 'GM41YukmIBNVXFrhvq4Um8epetvyQlXI' //in the discord dev app when you make the Oauth2 get the token and put it here
+const REDIRECT_URI = 'http://localhost:3000/callback' //callback address
+
+const generateRandomString = () => {
+    return crypto.randomBytes(32).toString('hex');
+  };
+  
+const secret = generateRandomString();
+
+app.use(session({
+    secret: secret,
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.get('/', (req, res) => {
+    const authorizationUrl = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify`;
+    res.redirect(authorizationUrl);
+});
+
+const database = {};
+
+app.get('/database', (req, res) => {
+    res.json(database);
+});
+
+app.post('/database', express.json(), (req, res) => {
+    const { user, discordId, discordAvatarLink } = req.body;
+
+    if (!user || !discordId || !discordAvatarLink) {
+        return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    database[user] = [discordId, discordAvatarLink];
+    res.status(201).json({ message: 'User data added' });
+});
+app.get('/callback', async (req, res) => {
+    const code = req.query.code;
+    const tokenUrl = 'https://discord.com/api/oauth2/token';
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT_URI,
+        scope: 'identify',
+    });
+
+    try {
+        const tokenResponse = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params,
+        });
+
+        const tokenData = await tokenResponse.json();
+        const accessToken = tokenData.access_token;
+
+        const userResponse = await fetch('https://discord.com/api/users/@me', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        const userData = await userResponse.json();
+
+        console.log("Retrieved user data:", userData);
+
+        if (!req.session.userData) {
+            req.session.userData = {};
+        }
+
+        req.session.userData.avatarUrl = `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`;
+
+        console.log("User data after setting avatar URL:", req.session.userData);
+
+        res.send(`
+            <script>
+                const userDataToSend = {
+                    discordId: '${userData.id}',
+                    discordAvatarLink: '${req.session.userData.avatarUrl}',
+                };
+                const database = 'http://localhost:3000/database';
+
+                const enteredAccountName = prompt('Enter your scenexe2 account name:');
+                if (enteredAccountName) {
+                    userDataToSend.user = enteredAccountName;
+
+                    fetch(database, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userDataToSend),
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to add user data to the database');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('User data added to the database:', data);
+                        window.location.href = '/account/' + encodeURIComponent(enteredAccountName);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error fetching user data');
+                    });
+                } else {
+                    window.location.href = '/'; // Redirect back to homepage if no account name entered
+                }
+            </script>
+        `);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Error fetching user data');
+    }
+});
+
 
 app.get("/account/:user", async (req, res) => {
 	const user = req.params.user;
 	const url = `https://scenexe2.io/account?u=${user}`;
+    const userData = req.session.userData;
+    if (!database[user]) {
+        return res.status(404).send("User not found in the database.");
+    }
 
 	try {
 		const response = await fetch(url);
 		const data = await response.json();
+        const userData = req.session.userData;
 
 		const formatNumber = (num) => {
 			if (num >= 1e15)
@@ -63,8 +200,7 @@ app.get("/account/:user", async (req, res) => {
             }
         }
         
-        const pfp =
-        "https://cdn.discordapp.com/attachments/1190435941786071182/1228565162504753213/74bdd565-0f09-47d6-b48f-b2dcae06108f.png?ex=662c8178&is=661a0c78&hm=c4cdf2909d777aceed5f6f7d4b07ae16424e9682252d6ae73d766dd9231b1d3a&";
+        const pfp = database[user][1]
         const backgrounds = [
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713107509349/image.png?ex=6635741a&is=6622ff1a&hm=20d5e6cde113220d0d9f548b079bddffcc72c3de0998519bdaa40bd898796839&",
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713426538496/image.png?ex=6635741b&is=6622ff1b&hm=4c78e36b2c79a14363e94974e210ebe729cbcd83afe3c3d29983c811ea609e68&",
@@ -337,6 +473,20 @@ app.get("/account/:user", async (req, res) => {
 	}
 });
 
-app.listen(port, () => {
-	console.log(`Server running at http://localhost:${port}`);
+//if you want to host on your own domain
+/*
+const privateKey = fs.readFileSync('key.pem', 'utf8'); 
+const certificate = fs.readFileSync('cert.pem', 'utf8');
+
+const credentials = { key: privateKey, cert: certificate };
+
+const httpsServer = https.createServer(credentials, app);
+
+httpsServer.listen(port, () => {
+    console.log(`Server running at https://your-domain.com:${port}`);
+});
+*/
+
+app.listen(port, '0.0.0.0', () => {
+	console.log(`Server running at http://0.0.0.0:${port}`);
 });
