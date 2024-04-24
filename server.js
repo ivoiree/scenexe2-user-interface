@@ -11,8 +11,8 @@ const session = require('express-session');
 const { URLSearchParams } = require('url');
 const app = express();
 const port = 3000;
-const CLIENT_ID = '1232467754389606461' //in discord dev apps get the app id and put it here
-const CLIENT_SECRET = 'GM41YukmIBNVXFrhvq4Um8epetvyQlXI' //in the discord dev app when you make the Oauth2 get the token and put it here
+const CLIENT_ID = '' //in discord dev apps get the app id and put it here
+const CLIENT_SECRET = '' //in the discord dev app when you make the Oauth2 get the token and put it here
 const REDIRECT_URI = 'http://localhost:3000/callback' //callback address
 
 const generateRandomString = () => {
