@@ -9,11 +9,29 @@ const https = require("https");
 const crypto = require('crypto');
 const session = require('express-session');
 const { URLSearchParams } = require('url');
+
 const app = express();
 const port = 3000;
-const CLIENT_ID = '' //in discord dev apps get the app id and put it here
-const CLIENT_SECRET = '' //in the discord dev app when you make the Oauth2 get the token and put it here
-const REDIRECT_URI = 'http://localhost:3000/callback' //callback address
+const host = 'http://localhost'
+
+const CLIENT_ID = '' //in discord dev app where you made Oauth2 get client id
+const CLIENT_SECRET = '' //in discord dev app where you made Oauth2 get client secret token
+const REDIRECT_URI = `${host}:${port}/callback` //callback address
+
+let database = {};
+
+fs.readFile('database.json', 'utf8', (err, data) => {
+    if (err) {
+        console.error('Error reading database file:', err);
+        return;
+    }
+    try {
+        database = JSON.parse(data);
+        console.log('Database loaded successfully');
+    } catch (parseError) {
+        console.error('Error parsing database JSON:', parseError);
+    }
+});
 
 const generateRandomString = () => {
     return crypto.randomBytes(32).toString('hex');
@@ -27,9 +45,33 @@ app.use(session({
     saveUninitialized: false
 }));
 
-app.get('/', (req, res) => {
+app.get('/link', (req, res) => {
     const authorizationUrl = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify`;
     res.redirect(authorizationUrl);
+});
+
+app.post('/database', express.json(), (req, res) => {
+    const { user, discordId, discordAvatarLink } = req.body;
+
+    if (!user || !discordId || !discordAvatarLink) {
+        return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    if (database[user]) {
+        return res.status(409).json({ error: 'User already exists and cannot be changed' });
+    }
+
+    database[user] = [discordId, discordAvatarLink];
+    res.status(201).json({ message: 'User data added' });
+    const jsonData = JSON.stringify(database, null, 2);
+
+    fs.writeFile('database.json', jsonData, (err) => {
+        if (err) {
+            console.error('Error writing to database file:', err);
+        } else {
+            console.log('Data written to database file successfully');
+        }
+    });
 });
 
 app.get('/callback', async (req, res) => {
@@ -76,9 +118,37 @@ app.get('/callback', async (req, res) => {
 
         res.send(`
             <script>
+                const userDataToSend = {
+                    discordId: '${userData.id}',
+                    discordAvatarLink: '${req.session.userData.avatarUrl}',
+                };               //YOU NEED TO HARDCODE THIS ONE
+                const database = 'http://localhost:3000/database';
+
                 const enteredAccountName = prompt('Enter your scenexe2 account name:');
                 if (enteredAccountName) {
-                    window.location.href = '/account/' + encodeURIComponent(enteredAccountName);
+                    userDataToSend.user = enteredAccountName;
+
+                    fetch(database, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userDataToSend),
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to add user data to the database');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('User data added to the database:', data);
+                        window.location.href = '/account/' + encodeURIComponent(enteredAccountName);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error fetching user data');
+                    });
                 } else {
                     window.location.href = '/'; // Redirect back to homepage if no account name entered
                 }
@@ -89,7 +159,6 @@ app.get('/callback', async (req, res) => {
         res.status(500).send('Error fetching user data');
     }
 });
-
 
 app.get("/account/:user", async (req, res) => {
 	const user = req.params.user;
@@ -153,7 +222,7 @@ app.get("/account/:user", async (req, res) => {
             }
         }
         
-        const pfp = userData.avatarUrl
+        const pfp = database[user] ? database[user][1] : 'https://cdn.discordapp.com/attachments/1190435941786071182/1232493881204015144/db6b020c58607f70fd2075d4891671d7.png?ex=6629a8df&is=6628575f&hm=b54a778ad090e0ddcd32d52c66a1207a387bc503671eab4fea9729554d3c3731&';
         const backgrounds = [
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713107509349/image.png?ex=6635741a&is=6622ff1a&hm=20d5e6cde113220d0d9f548b079bddffcc72c3de0998519bdaa40bd898796839&",
             "https://cdn.discordapp.com/attachments/1215616270100074516/1231024713426538496/image.png?ex=6635741b&is=6622ff1b&hm=4c78e36b2c79a14363e94974e210ebe729cbcd83afe3c3d29983c811ea609e68&",
@@ -166,6 +235,8 @@ app.get("/account/:user", async (req, res) => {
     <!DOCTYPE html>
     <html>
     <head>
+    <meta name="description" content="A fan made scenexe2 peofile viewer">
+    <link rel="shortcut icon" href="https://cdn.glitch.global/29134419-8262-4621-b4dc-41149f958893/scenexe.png">
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
         <style>
              body {
@@ -355,17 +426,20 @@ app.get("/account/:user", async (req, res) => {
         </style>
     </head>
     <body>
-         <div class="search-container">
+        <div class="search-container">
             <form class="search-form" id="searchForm">
                 <input class="search-input" type="text" name="query" placeholder="Search...">
-                <img class="search-button-image" src="https://scenexe.io/assets/search.png" onclick="search();" alt="Search">
+                <button type="submit" class="search-button">
+                    <img class="search-button-image" src="https://scenexe.io/assets/search.png" alt="Search">
+                </button>
             </form>
         </div>
         <script>
         document.getElementById('searchForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const input = document.querySelector('.search-input').value;
-            window.location.href = '/account/' + encodeURIComponent(input);
+            const url = '/account/' + encodeURIComponent(input);
+            window.location.href = url; // Open the URL in the same tab
         });
         </script>
         <div class="profile-container">
@@ -427,6 +501,8 @@ app.get("/account/:user", async (req, res) => {
 });
 
 //if you want to host on your own domain
+//you need a server, domain and ssl
+
 /*
 const privateKey = fs.readFileSync('key.pem', 'utf8'); 
 const certificate = fs.readFileSync('cert.pem', 'utf8');
@@ -436,10 +512,11 @@ const credentials = { key: privateKey, cert: certificate };
 const httpsServer = https.createServer(credentials, app);
 
 httpsServer.listen(port, () => {
-    console.log(`Server running at https://your-domain.com:${port}`);
+    console.log(`Server running at ${host}:${port}`);
 });
 */
 
-app.listen(port, '0.0.0.0', () => {
-	console.log(`Server running at http://0.0.0.0:${port}`);
+
+app.listen(port, host, () => {
+	console.log(`Server running at ${host}:${port}`);
 });
