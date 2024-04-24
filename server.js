@@ -1,5 +1,6 @@
 const express = require("express");
 //const fetch = require("node-fetch");
+//corn
 import("node-fetch").then(fetch => {
 }).catch(err => {
     console.error('Failed to load node-fetch:', err);
