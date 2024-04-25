@@ -251,6 +251,7 @@ app.get("/account/:user", async (req, res) => {
     <!DOCTYPE html>
     <html>
     <head>
+    <title>scenexe2 profile viewer</title>
     <meta name="description" content="A fan made scenexe2 peofile viewer">
     <link rel="shortcut icon" href="https://cdn.glitch.global/29134419-8262-4621-b4dc-41149f958893/scenexe.png">
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
