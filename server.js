@@ -132,6 +132,11 @@ app.get('/callback', async (req, res) => {
 
         console.log("User data after setting avatar URL:", req.session.userData);
 
+        const htmlContent = fs.readFileSync(path.join(__dirname, 'callback.html'), 'utf8');
+
+        // Send the HTML content as the response
+        res.send(htmlContent);
+
         res.send(`
             <script>
                 const userDataToSend = {
