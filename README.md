@@ -1,5 +1,7 @@
 Scenexe2 Profile interface.
 
+[Public Website](https://scenexe2-profiles.com)
+
 to run locally `npm install`
 then `npm start`
 go to `http://localhost:3000/account/{account_name}` to view profiles 
