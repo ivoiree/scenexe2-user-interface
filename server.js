@@ -14,8 +14,8 @@ const app = express();
 const port = 3000;
 const host = 'http://localhost'
 
-const CLIENT_ID = '1232467754389606461' //in discord dev app where you made Oauth2 get client id
-const CLIENT_SECRET = 'kum3pBbnTiYEtAfLFqn8G9CuIMFmY9w-' //in discord dev app where you made Oauth2 get client secret token
+const CLIENT_ID = '' //in discord dev app where you made Oauth2 get client id
+const CLIENT_SECRET = '' //in discord dev app where you made Oauth2 get client secret token
 const REDIRECT_URI = `${host}:${port}/callback` //callback address
 
 let database = {};
