@@ -14,8 +14,8 @@ const app = express();
 const port = 3000;
 const host = 'http://localhost'
 
-const CLIENT_ID = '' //in discord dev app where you made Oauth2 get client id
-const CLIENT_SECRET = '' //in discord dev app where you made Oauth2 get client secret token
+const CLIENT_ID = '1232467754389606461' //in discord dev app where you made Oauth2 get client id
+const CLIENT_SECRET = 'kum3pBbnTiYEtAfLFqn8G9CuIMFmY9w-' //in discord dev app where you made Oauth2 get client secret token
 const REDIRECT_URI = `${host}:${port}/callback` //callback address
 
 let database = {};
@@ -106,7 +106,8 @@ app.get('/database/:user', (req, res) => {
             const database = JSON.parse(data);
             const user = database[req.params.user];
             if (user) {
-                res.json(user);
+                const response = [req.params.user]
+                res.json(response.concat(user))
             } else {
                 res.status(404).json({ error: 'User not found' });
             }
@@ -165,7 +166,7 @@ app.get('/callback', async (req, res) => {
                     discordId: '${userData.id}',
                     discordAvatarLink: '${req.session.userData.avatarUrl}',
                 };               //YOU NEED TO HARDCODE THIS ONE
-                const database = 'http://localhost:3000/database';
+                const database = 'http://${host}:${port}/database';
 
                 const enteredAccountName = prompt('Enter your scenexe2 account name:');
                 if (enteredAccountName) {
