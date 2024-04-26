@@ -565,7 +565,7 @@ app.get('/', async (req, res) => {
         const database = await responsedb.json();
         const user = await response.json();
         const stars = user.stars;
-        const pfp = database[1]
+        const pfp = database[2]
 
         return `
             <div class="box">
