@@ -14,8 +14,8 @@ const app = express();
 const port = 3000;
 const host = 'http://localhost'
 
-const CLIENT_ID = '' //in discord dev app where you made Oauth2 get client id
-const CLIENT_SECRET = '' //in discord dev app where you made Oauth2 get client secret token
+const CLIENT_ID = '1232467754389606461' //in discord dev app where you made Oauth2 get client id
+const CLIENT_SECRET = 'kum3pBbnTiYEtAfLFqn8G9CuIMFmY9w-' //in discord dev app where you made Oauth2 get client secret token
 const REDIRECT_URI = `${host}:${port}/callback` //callback address
 
 let database = {};
@@ -89,6 +89,27 @@ app.get('/database', (req, res) => {
         try {
             const database = JSON.parse(data);
             res.json(database);
+        } catch (parseError) {
+            console.error('Error parsing database JSON:', parseError);
+            res.status(500).json({ error: 'Error parsing database JSON' });
+        }
+    });
+});
+
+app.get('/database/:user', (req, res) => {
+    fs.readFile('database.json', 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading database file:', err);
+            return res.status(500).json({ error: 'Error reading database file' });
+        }
+        try {
+            const database = JSON.parse(data);
+            const user = database[req.params.user];
+            if (user) {
+                res.json(user);
+            } else {
+                res.status(404).json({ error: 'User not found' });
+            }
         } catch (parseError) {
             console.error('Error parsing database JSON:', parseError);
             res.status(500).json({ error: 'Error parsing database JSON' });
@@ -350,7 +371,7 @@ app.get("/account/:user", async (req, res) => {
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 0px 65px;
+                padding: 0px 80px;
                 z-index: 3;
             }
             
@@ -417,6 +438,19 @@ app.get("/account/:user", async (req, res) => {
                 border-width: 3px;
                 border-radius: 3px;
                 background-color: white;
+                opacity: 0;
+            }
+
+            .search-button {
+                cursor: pointer;
+                width: 25px; 
+                height: 25px;
+                border-style: solid;
+                border-color: rgba(0, 0, 0, 1);
+                border-width: 3px;
+                border-radius: 3px;
+                background-color: white;
+                opacity: 0;
             }
 
             .boxes-container {
@@ -491,10 +525,6 @@ app.get("/account/:user", async (req, res) => {
                 <div class="text">Playtime</div>
                 <div class="value">${formatTime(data.timePlayed)}</div>
             </div>
-            <div class="stats-item">
-                <div class="text">Tank Kills</div>
-                <div class="value">${formatNumber(data.tankKills)}</div>
-            </div>
         </div>
         <hr>
         <div class="boxes-container">
@@ -510,6 +540,8 @@ app.get("/account/:user", async (req, res) => {
                     <div class="box-title">Additional Info</div>
                     <hr class="hr2">
                     <div>Polygon Kills: ${formatNumber(data.polygonKills)}</div>
+                    <div>Abyss Entry: ${formatNumber(data.abyss)}</div>
+                    <div>Crossroads Entry: ${formatNumber(data.crossroads)} ago</div>
                 </div>
             </div>
         </div>
@@ -528,12 +560,16 @@ app.get('/', async (req, res) => {
 
     const usersbox = await Promise.all(users.map(async (username) => {
         const response = await fetch(`https://scenexe2.io/account?u=${encodeURIComponent(username)}`);
-        const userData = await response.json();
-        const stars = userData.stars;
+        const responsedb = await fetch(`${host}:${port}/database/${encodeURIComponent(username)}`)
+        const database = await responsedb.json();
+        const user = await response.json();
+        const stars = user.stars;
+        const pfp = database[1]
 
         return `
             <div class="box">
                 <div class="box-title">
+                <img src="${pfp}" style="width: 64px; height: 64px; border-radius: 50%;">
                 <a href="${host}:${port}/account/${username}">${username}</a>
                 </div>
                 <div class="box-value">
@@ -788,11 +824,11 @@ app.get('/', async (req, res) => {
             <h1>scenexe2.io profiles</h1>
         </div>
     </div>
-    <div class="description">hello chat</div>
-    <button onclick="window.location.href("/link")">link!</button>
+    <div class="description">A public interface for users made by 1contra and _x7333(ivy).</div>
+    <div class="description">Below is a list of every user that is in the database.</div>
     <hr>
     <div class="boxes-container">
-        ${usersbox}
+        ${usersboxHtml}
     </div>
     </body>
     </html>
